@@ -1109,7 +1109,6 @@ bool QRCodeDetector::detect(InputArray in, vector<Mat>& points)
 
 bool QRCodeDetector::detect(InputArray in, OutputArray points)
 {
-    std::cout<<"auuuuuu"<<std::endl;
     Mat inarr = in.getMat();
     CV_Assert(!inarr.empty());
     CV_Assert(inarr.depth() == CV_8U);
@@ -1311,7 +1310,6 @@ bool QRDecode::versionDefinition()
           if ( !(  0 < version[c] && version[c] <= 40 ) ) { return false; }
           version_size[c] = 21 + (version[c] - 1) * 4;
   }
-  std::cout<<"all good in versionDefinition\n"<<std::endl;
     return true;
 }
 
@@ -1462,14 +1460,19 @@ vector<cv::String> QRCodeDetector::decode(InputArray in, vector<Mat> points,
     qrdec.init(inarr, src_points);
     bool ok = qrdec.fullDecodingProcess();
     vector<std::string > decoded_info= qrdec.getDecodeInformation();
-    std::cout<<decoded_info.size()<<std::endl;
-    //if (ok && straight_qrcode.needed())
-    //{
-    //   qrdec.getStraightBarcode().convertTo(straight_qrcode,
-    //                                         straight_qrcode.fixedType() ?
-    //                                         straight_qrcode.type() : CV_32FC2);
-//   }
+    vector<Mat> straight_barcode=qrdec.getStraightBarcode();
+    for(size_t i=0; i<straight_barcode.size(); i++)
+    {
+        if (ok && ((OutputArray)(straight_barcode[i])).needed())
+        {
 
+            Mat tmp;
+            straight_qrcode.push_back(tmp);
+            straight_barcode[i].convertTo(((OutputArray)straight_qrcode[i]),
+                                             ((OutputArray)straight_qrcode[i]).fixedType() ?
+                                             ((OutputArray)straight_qrcode[i]).type() : CV_32FC2);
+       }
+    }
     //return ok ? decoded_info : std::string();
     return decoded_info;
 }
