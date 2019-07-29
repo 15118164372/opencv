@@ -688,7 +688,7 @@ public:
      @param img grayscale or color (BGR) image containing (or not) QR code.
      @param points Output vector of vertices of the minimum-area quadrangle containing the code.
      */
-    CV_WRAP bool detect(InputArray img, std::vector<Mat>& points);
+    CV_WRAP bool detect(InputArray img, std::vector<Mat>& points, cv::Mat &barcode);
     bool detect(InputArray img, OutputArray points) ;
 
 
@@ -709,7 +709,7 @@ public:
      @param straight_qrcode The optional output image containing rectified and binarized QR code
      */
     CV_WRAP std::vector<cv::String> detectAndDecode(InputArray img, std::vector<Mat>& points,
-                                                                             std::vector<Mat>& straight_qrcode);
+                                                                             std::vector<Mat>& straight_qrcode, cv::Mat &barcode);
     cv::String detectAndDecode(InputArray img, OutputArray points_,
                                        OutputArray straight_qrcode=noArray() );
 
