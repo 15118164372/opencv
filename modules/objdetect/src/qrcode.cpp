@@ -606,6 +606,7 @@ void swap(int *a, int i, int j)
 }
 bool NextSet(int *a, int n)
 {
+  //std::cout << "Look for combination...\n";
   int j = n - 2;
   while (j != -1 && a[j] >= a[j + 1]) j--;
   if (j == -1)
@@ -613,14 +614,29 @@ bool NextSet(int *a, int n)
   int k = n - 1;
   while (a[j] >= a[k]) k--;
 
-  swap(a, j, k);
+  std::swap(a[j], a[k]);
   int l = j + 1, r = n - 1; // сортируем оставшуюся часть последовательности
   while (l<r)
-    swap(a, l++, r--);
+    std::swap(a[l++],a[r--] );
   if((j/3)!=(k/3))
       return true;
   else return NextSet(a, n);
+  //return true;
+}
 
+bool NextSet(int *a, int n, int m)
+{
+
+  int k = m;
+  for (int i = k - 1; i >= 0; --i)
+    if (a[i] < n - k + i )
+    {
+      ++a[i];
+      for (int j = i + 1; j < k; ++j)
+        a[j] = a[j - 1] + 1;
+      return true;
+    }
+  return false;
 }
 
 double triangle_area(Point2f a, Point2f b, Point2f c)
@@ -629,6 +645,18 @@ double triangle_area(Point2f a, Point2f b, Point2f c)
   double s=0.5 * ( b.x-a.x)*(c.y-a.y)-(c.x-a.x)*(b.y-a.y);
   if (s<0) s=-1*s;
   return s;
+}
+
+double length(Point2f a, Point2f b)
+{
+  double l=sqrt((b.x-a.x)*(b.x-a.x)+(b.y-a.y)*(b.y-a.y));
+  return l;
+}
+
+double perimeter(Point2f a, Point2f b, Point2f c)
+{
+  double p=length(a,b) + length(b,c) + length(a,c);
+  return p;
 }
 bool QRDetect::localization()
 {
@@ -643,7 +671,7 @@ bool QRDetect::localization()
 
     for (int i = 0; i < list_lines_y.size(); i++)
     {
-        circle(barcode, list_lines_y[i], 5, Scalar(255, 255, 255));
+      //circle(barcode, list_lines_y[i], 5, Scalar(255, 255, 255));
     }
 
     //vector<Point2f> list_lines_y = separateVerticalLines(list_lines_x);
@@ -693,19 +721,35 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
         //std :: cout << "Mera: " << mera << std :: endl;
 
     }
-    size_t max_index=0;
+    size_t number_points=0;
     for(size_t i=0; i<frac.size();i++)
     {
-      if(frac[i]>=frac[max_index]) max_index=i;
+      if(frac[i]>=frac[number_points]) number_points=i;
     }
-   std :: cout << "number of qr-codes points is " << max_index+2 << std :: endl;
-   if(((max_index+2)%3)!=0) return false;
-   number = (max_index+2)/3;
-  //  std::sort (tmp_localization_points.begin(), tmp_localization_points.begin()+tmp_localization_points.size(),
-	 //     [](Point2f& a,Point2f& b)
-	 //     {
- 		//         return (sqrt(a.x*a.x+a.y*a.y))<(sqrt(b.x*b.x+b.y*b.y));
-	  //    });
+
+
+   std :: cout << "number of qr-codes points is " << number_points+2 << std :: endl;
+  // if(((max_index+2)%3)!=0) return false;
+   number_points+=2;
+   number = number_points/3;
+   if(number_points < 3) return false;
+   std::cout << "number is " << number << std::endl;
+   kmeans(list_lines_y, number_points, labels,
+      TermCriteria( TermCriteria::EPS + TermCriteria::COUNT, 10, 0.1),
+    number_points, KMEANS_PP_CENTERS, tmp_localization_points);
+
+   std::sort (tmp_localization_points.begin(), tmp_localization_points.begin()+tmp_localization_points.size(),
+	      [](Point2f& a,Point2f& b)
+	      {
+ 		         return (sqrt(a.x*a.x+a.y*a.y))<(sqrt(b.x*b.x+b.y*b.y));
+	      });
+   std::cout << tmp_localization_points.size() << std::endl;
+   for(size_t k = 0; k < tmp_localization_points.size(); k++)
+   {
+       circle(barcode, tmp_localization_points[k], 10, Scalar(255, 255, 255));
+       std::cout << tmp_localization_points[k] << " ";
+  }
+  std::cout << std::endl;
   //  for(int i=0;i<6;i++)std::cout<<local_point[i]<<" "; std::cout<<std::endl;
     //for(size_t i=0;i<tmp_local_point.size()/3;i++)
     //    std::copy(tmp_local_point[i*3],tmp_local_point[i*3+3],local_point[i]);
@@ -764,11 +808,25 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
         bool flag;
         //все точки в tmp_localization_points
         int *mas=new int[number*3];
+        int *mas_tmp=new int[number_points];
         for(size_t j=0;j<number*3;j++) mas[j]=j;
+        for(size_t j=0;j<number_points;j++)
+        {
+          mas_tmp[j] = j;
+          std::cout << mas_tmp[j] << ' ';
+        }
         bool flag_for_in=true;
         bool flag_for_out =true;
+        bool flag_=true;
         double sum1=10000000;
         double sum2=0;
+        double sum_per1=10000000;
+        double sum_per2=0;
+        /*std::sort (tmp_localization_points.begin(), tmp_localization_points.begin()+tmp_localization_points.size(),
+            [](Point2f& a,Point2f& b)
+             {
+                  return (sqrt(a.x*a.x+a.y*a.y))<(sqrt(b.x*b.x+b.y*b.y));
+             });*/
         vector<vector<Point2f>> triangles;
         while( (flag_for_in==true)&&(flag_for_out==true))
         {
@@ -783,7 +841,29 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
                //std :: cout << mas[3*s] << ' ' << mas[3*s+1] << ' ' << mas[3*s+2] << ' ';
 
            }
-           flag_for_in=NextSet(mas,number*3);
+           if ((number_points%3)==0)
+              flag_for_in=NextSet(mas,number*3);
+           else
+           {
+             if(flag_==false)
+             {
+
+                flag_for_in=NextSet(mas_tmp, number_points, number*3);
+
+                for(size_t p=0; p<number*3; p++)
+                {
+                  mas[p] = mas_tmp[p];
+                  std::cout << mas[p] << ' ';
+                }
+                 std::cout << std::endl;
+             }
+             flag_ = NextSet(mas,number*3);
+            // for(size_t p=0; p<number*3; p++) std::cout << mas[p] << ' ';
+            // std::cout << std::endl;
+           }
+           //for(size_t z=0;z<number*3;z++)
+      //        std::cout << mas[z] << " ";
+          // std::cout << std::endl;
            //std :: cout << std::endl;
         //for(size_t f=0;f<(tmp_localization_points.size()/3);f++)
       //      for(size_t k=f+1; k<(tmp_localization_points.size()/3) ; k++ )
@@ -803,7 +883,7 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
                                   {
                                   //  std::cout << "deleted points :" << tmp_triangle[0] << ' ' << tmp_triangle[1] << std::endl;
                                       tmp_triangle.clear();
-                                    //std :: cout <<"exit\n";
+                                    //  std :: cout <<"exit\n";
                                     break;
                                   }
 
@@ -816,27 +896,61 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
 
           if(tmp_triangle.size()==number)
           {
+            //  std::cout << "не пересекаются\n";
 
              for(size_t q=0;q<number;q++)
+             {
                  sum2+=triangle_area(tmp_triangle[q][0], tmp_triangle[q][1], tmp_triangle[q][2]);
-
-            if (sum2 <= sum1)
+                 sum_per2+=perimeter(tmp_triangle[q][0], tmp_triangle[q][1], tmp_triangle[q][2]);
+             }
+            if ((sum2 <= sum1) && (sum_per2 <= sum_per1))
             {
 
               sum1=sum2;
+              sum_per1=sum_per2;
               triangles=tmp_triangle;
 
-           }
-           fixationPoints(tmp_triangle);
+
+
+            }
+            fixationPoints(tmp_triangle);
+           bool flag_n = true;
            if(tmp_triangle.size()==number)
            {
-               for(size_t i=0;i<number;i++)
-                  localization_points.push_back(tmp_triangle[i]);
-               flag_for_out=false;
-               //localization_points.push_back(tmp_triangle[1]);
-           }
+            // std:: cout << "a\n";
+          /*   for (size_t k = 0; k < number; k++)
+             {
+               for(size_t i=0; i<3; i++)
+               {
+                  for(size_t j=i; j<3; j++)
+                  {
+                    if (norm(tmp_triangle[k][i] - tmp_triangle[k][j]) < 10)
+                    {
+                        flag_n = false;
+                        break;
+                    }
+
+                  } if (flag_n == false ) break;
+
+                } if (flag_n == false ) break;
+              }*/
+
+            if( flag_n == true)
+            {
+
+                for(size_t i = 0; i < number; i ++)
+                    localization_points.push_back(tmp_triangle[i]);
+                std::cout << localization_points[0] << std::endl;
+                flag_for_out = false;
+
+            }
+          }
+
+
+
          }
-            sum2=0;
+            sum2 = 0;
+            sum_per2 = 0;
              //fixationPoints(tmp_triangle);
              //if(tmp_triangle.size()==number)
              //{
@@ -859,12 +973,16 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
             std::cout<<(current_areas[0]).point << ' '<< current_areas[1].point << std::endl;
         }
         */
-    if(localization_points.size()==0)
+    if ((localization_points.size()==0) && (triangles.size() == 0)) return false;
+    if (localization_points.size()==0)
     {
         fixationPoints(triangles);
         for(size_t i=0;i<triangles.size();i++)
            localization_points.push_back(triangles[i]);
      }
+    
+     //for (size_t i = 0; i < localization_points[0].size(); i++)
+        //circle(barcode, localization_points[1][i], 5, Scalar(255, 255, 255));
     //localization_points=tmp_triangle;
     //fixationPoints(localization_points);
     std::cout<<"size of localization points is " << localization_points.size() <<std::endl;
@@ -942,11 +1060,13 @@ std :: cout << number << ": " << mera/new_mera << std :: endl;
             {
                 if (norm(localization_points[k][i] - localization_points[k][j]) < 10)
                 {
-                    return false;
+                    localization_points.erase(localization_points.begin()+k);
+
                 }
             }
         }
     }
+    if(localization_points.size()==0) return false;
     return true;
 
 }
@@ -1411,6 +1531,7 @@ bool QRCodeDetector::detect(InputArray in, vector<Mat>& points, Mat &barc)
   qrdet.init(inarr, p->epsX, p->epsY);
   if (!qrdet.localization()) { return false; }
   if (!qrdet.computeTransformationPoints()) { return false; }
+
   vector<vector<Point2f>> pnts2f = qrdet.getTransformationPoints();
   for(size_t i=0;i<pnts2f.size();i++)
   {
